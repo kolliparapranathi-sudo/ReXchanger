@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReXchange - Student Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="logo" href="index.html">ReXchange</a>
+      <div class="search">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="text"
+          placeholder="Search books, bikes, dorm essentials..."
+          aria-label="Search listings"
+        />
+      </div>
+      <div class="filters">
+        <select aria-label="Browse categories">
+          <option value="">All categories</option>
+          <option>Textbooks</option>
+          <option>Electronics</option>
+          <option>Furniture</option>
+          <option>Transport</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="ghost" type="button" data-auth-button>Login</button>
+        <button class="primary" type="button" data-listing-button>List an Item</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div class="hero__content">
+          <h1>Second-Hand Exchange Student Portal</h1>
+          <p>
+            Discover verified deals from fellow students. Save money on essentials
+            for campus life and give unused items a second home.
+          </p>
+          <div class="hero__cta">
+            <a class="primary" href="#listings">Start Browsing</a>
+            <button class="ghost" type="button" data-hero-auth>
+              Sign in to manage listings
+            </button>
+          </div>
+        </div>
+        <div class="hero__card">
+          <span class="status">Trending</span>
+          <img
+            src="https://images.unsplash.com/photo-1483478550801-ceba5fe50e8e?auto=format&fit=crop&w=800&q=80"
+            alt="Students exchanging items"
+          />
+          <div class="hero__card-content">
+            <h3>Campus Swap Fair</h3>
+            <p>Weekly meetups for quick trades across campus.</p>
+            <button class="secondary">See schedule</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="listing-form" id="listing-form" aria-labelledby="listing-form-title">
+        <div class="section-header">
+          <h2 id="listing-form-title">Create your listing</h2>
+          <p class="listing-form__subtitle">
+            Share what you're selling and it will appear instantly for other
+            students.
+          </p>
+        </div>
+        <form class="listing-form__card" data-listing-form>
+          <div class="form-row">
+            <label>
+              Item title
+              <input name="title" type="text" placeholder="e.g. Intro to Algorithms textbook" required />
+            </label>
+            <label>
+              Price (INR)
+              <input
+                name="price"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="e.g. 3500"
+                required
+              />
+            </label>
+            <label>
+              Condition
+              <select name="condition" required>
+                <option value="Like New">Like New</option>
+                <option value="Excellent">Excellent</option>
+                <option value="Good">Good</option>
+                <option value="Well-loved">Well-loved</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Category
+              <select name="category" required>
+                <option value="Textbooks">Textbooks</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Transport">Transport</option>
+                <option value="Dorm Essentials">Dorm Essentials</option>
+                <option value="Clothing">Clothing</option>
+              </select>
+            </label>
+            <label class="full">
+              Photo URL (optional)
+              <input name="image" type="url" placeholder="https://example.com/item.jpg" />
+            </label>
+          </div>
+          <label class="full">
+            Description
+            <textarea
+              name="description"
+              rows="3"
+              placeholder="Add key details buyers should know"
+              required
+            ></textarea>
+          </label>
+          <button class="primary" type="submit">Publish listing</button>
+          <p class="listing-form__message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="listings" id="listings">
+        <div class="section-header">
+          <h2>Fresh Finds from Students</h2>
+          <button class="ghost" type="button">Set up alerts</button>
+        </div>
+        <div class="cards" data-listing-cards></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__content">
+        <div>
+          <h4>ReXchange</h4>
+          <p>Built by students for students. Trade smarter, sustainably.</p>
+        </div>
+        <div class="footer__links">
+          <a href="#">About</a>
+          <a href="#">Safety tips</a>
+          <a href="#">Support</a>
+        </div>
+      </div>
+      <p class="footer__note">© 2024 ReXchange Campus Network</p>
+    </footer>
+
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+    />
+    <script>
+      const authButton = document.querySelector("[data-auth-button]");
+      const listButton = document.querySelector("[data-listing-button]");
+      const heroAuthButton = document.querySelector("[data-hero-auth]");
+      const form = document.querySelector("[data-listing-form]");
+      const message = document.querySelector(".listing-form__message");
+      const cardsContainer = document.querySelector("[data-listing-cards]");
+      const listingStorageKey = "rexchangeListings";
+      const currencyFormatter = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0,
+      });
+      const formatCurrency = (value) => currencyFormatter.format(Number(value) || 0);
+      const apiCandidates = Array.from(
+        new Set(
+          [
+            window.REXCHANGE_API_BASE,
+            window.location.origin && window.location.origin !== "null"
+              ? window.location.origin
+              : null,
+            "http://localhost:4567",
+          ].filter(Boolean)
+        )
+      );
+      const fallbackListings = [
+        {
+          title: "Ultralight Study Laptop",
+          price: 34999,
+          category: "Electronics",
+          condition: "Excellent",
+          description:
+            "Intel i5, 8GB RAM, perfect for note-taking and online lectures.",
+          image:
+            "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=800&q=80",
+          seller: "Electrical Engineering",
+          detail: "2 years old",
+          createdAt: Date.now() - 2 * 60 * 60 * 1000,
+        },
+        {
+          title: "Hybrid Campus Bike",
+          price: 14500,
+          category: "Transport",
+          condition: "Good",
+          description: "Smooth gears, includes night lights and secure U-lock.",
+          image:
+            "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=800&q=80",
+          seller: "Mechanical Engineering",
+          detail: "Tuned last month",
+          createdAt: Date.now() - 4 * 60 * 60 * 1000,
+        },
+        {
+          title: "Modular Dorm Furniture Set",
+          price: 7800,
+          category: "Furniture",
+          condition: "Like New",
+          description:
+            "Includes storage ottoman, lamp, and compact desk organizer.",
+          image:
+            "https://images.unsplash.com/photo-1514890547357-a9ee288728e0?auto=format&fit=crop&w=800&q=80",
+          seller: "Architecture",
+          detail: "Fits standard dorm rooms",
+          createdAt: Date.now() - 6 * 60 * 60 * 1000,
+        },
+        {
+          title: "Data Science Textbook Bundle",
+          price: 5200,
+          category: "Textbooks",
+          condition: "Excellent",
+          description:
+            "Includes statistics, machine learning, and Python programming guides.",
+          image:
+            "https://images.unsplash.com/photo-1459040601669-5f142d7b90c4?auto=format&fit=crop&w=800&q=80",
+          seller: "Computer Science",
+          detail: "Fall 2023 editions",
+          createdAt: Date.now() - 8 * 60 * 60 * 1000,
+        },
+      ];
+
+      const getUser = () => {
+        try {
+          const stored = localStorage.getItem("rexchangeUser");
+          return stored ? JSON.parse(stored) : null;
+        } catch (error) {
+          console.error("Unable to read user", error);
+          return null;
+        }
+      };
+
+      let userListings = [];
+      const loadLocalListings = () => {
+        try {
+          const stored = JSON.parse(localStorage.getItem(listingStorageKey)) || [];
+          userListings = Array.isArray(stored) ? stored : [];
+        } catch (error) {
+          console.error("Unable to load listings", error);
+          userListings = [];
+        }
+      };
+
+      const saveListings = () => {
+        localStorage.setItem(listingStorageKey, JSON.stringify(userListings));
+      };
+
+      let backendListings = [];
+      let backendAvailable = false;
+      let activeApiBase = null;
+
+      const resolveBackendListings = async () => {
+        for (const base of apiCandidates) {
+          try {
+            const response = await fetch(${base}/api/listings, {
+              headers: { Accept: "application/json" },
+            });
+            if (!response.ok) {
+              continue;
+            }
+            const data = await response.json();
+            backendListings = Array.isArray(data) ? data : [];
+            activeApiBase = base;
+            backendAvailable = true;
+            return;
+          } catch (error) {
+            console.warn("Unable to reach backend at", base, error);
+          }
+        }
+        backendAvailable = false;
+      };
+
+      const allListings = () => {
+        if (backendAvailable) {
+          return [...backendListings];
+        }
+        const listings = [...userListings];
+        if (listings.length === 0) {
+          return [...fallbackListings];
+        }
+        return [...listings, ...fallbackListings];
+      };
+
+      const renderListings = () => {
+        const listings = allListings();
+        cardsContainer.innerHTML = "";
+        listings
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+          .forEach((item) => {
+            const article = document.createElement("article");
+            article.className = "card";
+
+            const badge = document.createElement("div");
+            const badgeClass =
+              item.condition === "Excellent"
+                ? "green"
+                : item.condition === "Like New"
+                ? "purple"
+                : "blue";
+            badge.className = card__badge ${badgeClass};
+            badge.textContent = item.condition;
+            article.appendChild(badge);
+
+            const image = document.createElement("img");
+            image.src =
+              item.image && item.image.trim()
+                ? item.image
+                : "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80";
+            image.alt = item.title;
+            article.appendChild(image);
+
+            const body = document.createElement("div");
+            body.className = "card__body";
+
+            const title = document.createElement("h3");
+            title.textContent = item.title;
+            body.appendChild(title);
+
+            const price = document.createElement("p");
+            price.className = "price";
+            price.textContent = formatCurrency(item.price);
+            body.appendChild(price);
+
+            if (item.seller || item.detail || item.category) {
+              const meta = document.createElement("p");
+              meta.className = "meta";
+              const seller = item.seller || "Student Seller";
+              const detail = item.detail || item.category || "Campus listing";
+              meta.textContent = ${seller} • ${detail};
+              body.appendChild(meta);
+            }
+
+            const description = document.createElement("p");
+            description.className = "description";
+            description.textContent = item.description;
+            body.appendChild(description);
+
+            article.appendChild(body);
+            cardsContainer.appendChild(article);
+          });
+      };
+
+      const setFormState = (isEnabled) => {
+        const elements = form.querySelectorAll("input, textarea, select, button[type='submit']");
+        elements.forEach((el) => {
+          el.disabled = !isEnabled && el.type !== "button";
+        });
+        form.classList.toggle("listing-form__card--disabled", !isEnabled);
+        if (!isEnabled) {
+          form.reset();
+        }
+        message.textContent = isEnabled
+          ? ""
+          : "Sign in to publish new listings.";
+      };
+
+      const updateAuthUI = () => {
+        const user = getUser();
+        if (user) {
+          authButton.textContent = "Sign out";
+          authButton.onclick = () => {
+            localStorage.removeItem("rexchangeUser");
+            updateAuthUI();
+          };
+          heroAuthButton.textContent = "You're signed in";
+          heroAuthButton.disabled = true;
+          heroAuthButton.onclick = null;
+          listButton.textContent = "List an Item";
+          listButton.onclick = () => {
+            document.getElementById("listing-form").scrollIntoView({ behavior: "smooth" });
+          };
+          setFormState(true);
+        } else {
+          authButton.textContent = "Login";
+          authButton.onclick = () => (window.location.href = "login.html");
+          heroAuthButton.textContent = "Sign in to manage listings";
+          heroAuthButton.disabled = false;
+          heroAuthButton.onclick = () => (window.location.href = "login.html");
+          listButton.textContent = "List an Item";
+          listButton.onclick = () => (window.location.href = "login.html");
+          setFormState(false);
+        }
+      };
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const user = getUser();
+        if (!user) {
+          message.textContent = "Please sign in before publishing a listing.";
+          return;
+        }
+        const formData = new FormData(form);
+        const newListing = {
+          title: formData.get("title").trim(),
+          price: Math.round(Number(formData.get("price"))),
+          condition: formData.get("condition"),
+          category: formData.get("category"),
+          description: formData.get("description").trim(),
+          image: (formData.get("image") || "").trim(),
+          seller: user.name || "Student Seller",
+          detail: new Date().toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          }),
+          createdAt: Date.now(),
+        };
+
+        if (!newListing.title || !newListing.description) {
+          message.textContent = "Please fill out all required fields.";
+          return;
+        }
+
+        if (backendAvailable && activeApiBase) {
+          try {
+            const response = await fetch(${activeApiBase}/api/listings, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: newListing.title,
+                price: newListing.price,
+                condition: newListing.condition,
+                category: newListing.category,
+                description: newListing.description,
+                image: newListing.image || null,
+                seller: newListing.seller,
+                detail: newListing.detail,
+              }),
+            });
+            if (!response.ok) {
+              throw new Error(Request failed with status ${response.status});
+            }
+            const saved = await response.json();
+            backendListings.unshift(saved);
+            renderListings();
+            form.reset();
+            message.textContent = "Listing published!";
+            return;
+          } catch (error) {
+            console.warn("Falling back to local storage", error);
+            backendAvailable = false;
+          }
+        }
+
+        userListings.unshift(newListing);
+        saveListings();
+        renderListings();
+        form.reset();
+        message.textContent = backendAvailable
+          ? "Listing saved locally while the server reconnects."
+          : "Listing saved locally.";
+      });
+
+      const initialize = async () => {
+        loadLocalListings();
+        updateAuthUI();
+        renderListings();
+        await resolveBackendListings();
+        renderListings();
+      };
+
+      initialize();
+      setInterval(async () => {
+        await resolveBackendListings();
+        renderListings();
+      }, 30000);
+    </script>
+  </body>
+</html>
